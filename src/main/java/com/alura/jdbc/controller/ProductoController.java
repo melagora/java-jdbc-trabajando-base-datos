@@ -18,8 +18,15 @@ public class ProductoController {
 		// TODO
 	}
 
-	public void eliminar(Integer id) {
-		// TODO
+	public int eliminar(Integer id) throws SQLException {
+		Connection con = new ConnectionFactory().recuperaConexion();
+		
+		Statement statement = con.createStatement();
+		
+		statement.execute("DELETE FROM PRODUCTO WHERE ID ="+id);
+		
+		return statement.getUpdateCount(); //Devuelve cuantas filas fueron modificada luego de que se aplico el comando de SQL en el statement
+		
 	}
 
 	public List<Map<String,String>> listar() throws SQLException{
