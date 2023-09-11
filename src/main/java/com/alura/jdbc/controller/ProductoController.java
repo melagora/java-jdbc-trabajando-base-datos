@@ -74,36 +74,44 @@ public class ProductoController {
 	}
 
 	public void guardar(Map<String, String> producto) throws SQLException {
-    	String nombre = producto.get("NOMBRE");
+		String nombre = producto.get("NOMBRE");
 		String descripcion = producto.get("DESCRIPCION");
 		Integer cantidad = Integer.valueOf(producto.get("CANTIDAD"));
 		Integer maximaCantidad = 50;
-		
+
 		ConnectionFactory factory = new ConnectionFactory();
-    	Connection con = factory.recuperaConexion();
-		con.setAutoCommit(false);//Nosotros tenemos el control de la transacción
-    	
-    	PreparedStatement statement = con.prepareStatement("INSERT INTO PRODUCTO "
-				+ "(nombre, descripcion, cantidad)"
-				+ "VALUES (?, ?, ?)",
+		Connection con = factory.recuperaConexion();
+		con.setAutoCommit(false);// Nosotros tenemos el control de la transacción
+
+		PreparedStatement statement = con.prepareStatement(
+				"INSERT INTO PRODUCTO " + "(nombre, descripcion, cantidad)" + "VALUES (?, ?, ?)",
 				Statement.RETURN_GENERATED_KEYS);
+		try {
+			do {
+				int cantidadParaGuardar = Math.min(cantidad, maximaCantidad);
+
+				ejecutaRegistro(nombre, descripcion, cantidadParaGuardar, statement);
+				cantidad -= maximaCantidad;
+			} while (cantidad > 0);
+
+			con.commit();
+			System.out.println("COMMIT");
+		} catch (Exception e) {
+			con.rollback(); //Cancelamos la ejecución de la transacción si existe un proble durante el proceso
+			System.out.println("ROLLBACK");
+		}
 		
-    	do {
-    		int cantidadParaGuardar = Math.min(cantidad, maximaCantidad);
-    		
-    		ejecutaRegistro(nombre, descripcion, cantidadParaGuardar, statement);
-    		cantidad -= maximaCantidad;
-    	}while(cantidad > 0);
-    	
-    	con.close();
+		statement.close();
+		
+		con.close();
 	}
 
 	private void ejecutaRegistro(String nombre, String descripcion, Integer cantidad, PreparedStatement statement)
 			throws SQLException {
-		//if(cantidad<50) {
-		//	throw new RuntimeException("Ocurrio un error");
-		//}
-		
+		// if(cantidad<50) {
+		// throw new RuntimeException("Ocurrio un error");
+		// }
+
 		statement.setString(1, nombre);
 		statement.setString(2, descripcion);
 		statement.setInt(3, cantidad);
