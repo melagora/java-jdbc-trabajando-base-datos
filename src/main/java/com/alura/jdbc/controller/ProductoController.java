@@ -17,60 +17,72 @@ public class ProductoController {
 
 	public int modificar(String nombre, String descripcion, Integer cantidad, Integer id) throws SQLException {
 		ConnectionFactory factory = new ConnectionFactory();
-		Connection con = factory.recuperaConexion();
-		PreparedStatement statement = con.prepareStatement(
-				"UPDATE PRODUCTO SET " + " NOMBRE = ?" + ", DESCRIPCION = ?" + ", CANTIDAD = ?" + " WHERE ID = ?");
-		statement.setString(1, nombre);
-		statement.setString(2, descripcion);
-		statement.setInt(3, cantidad);
-		statement.setInt(4, id);
+		final Connection con = factory.recuperaConexion();
+		try (con) {
 
-		statement.execute();
+			final PreparedStatement statement = con.prepareStatement(
+					"UPDATE PRODUCTO SET " + " NOMBRE = ?" + ", DESCRIPCION = ?" + ", CANTIDAD = ?" + " WHERE ID = ?");
+			try (statement) {
 
-		int updateCount = statement.getUpdateCount();
+				statement.setString(1, nombre);
+				statement.setString(2, descripcion);
+				statement.setInt(3, cantidad);
+				statement.setInt(4, id);
 
-		con.close();
+				statement.execute();
 
-		return updateCount;
+				int updateCount = statement.getUpdateCount();
 
+				con.close();
+
+				return updateCount;
+
+			}
+		}
 	}
 
 	public int eliminar(Integer id) throws SQLException {
-		Connection con = new ConnectionFactory().recuperaConexion();
+		final Connection con = new ConnectionFactory().recuperaConexion();
+		try (con) {
+			final PreparedStatement statement = con.prepareStatement("DELETE FROM PRODUCTO WHERE ID = ?");
+			try (statement) {
 
-		PreparedStatement statement = con.prepareStatement("DELETE FROM PRODUCTO WHERE ID = ?");
-		statement.setInt(1, id);
+				statement.setInt(1, id);
 
-		statement.execute();
+				statement.execute();
 
-		return statement.getUpdateCount(); // Devuelve cuantas filas fueron modificada luego de que se aplico el comando
-											// de SQL en el statement
-
+				return statement.getUpdateCount(); // Devuelve cuantas filas fueron modificada luego de que se aplico el
+													// comando
+													// de SQL en el statement
+			}
+		}
 	}
 
 	public List<Map<String, String>> listar() throws SQLException {
-		Connection con = new ConnectionFactory().recuperaConexion();
 
-		PreparedStatement statement = con.prepareStatement("SELECT ID, NOMBRE, DESCRIPCION, CANTIDAD FROM PRODUCTO");
-		statement.execute();
+		final Connection con = new ConnectionFactory().recuperaConexion();
 
-		ResultSet resultSet = statement.getResultSet();
+		try (con) {
+			final PreparedStatement statement = con
+					.prepareStatement("SELECT ID, NOMBRE, DESCRIPCION, CANTIDAD FROM PRODUCTO");
+			statement.execute();
+			try (statement) {
+				ResultSet resultSet = statement.getResultSet();
 
-		List<Map<String, String>> resultado = new ArrayList<>();
+				List<Map<String, String>> resultado = new ArrayList<>();
 
-		while (resultSet.next()) {
-			Map<String, String> fila = new HashMap<>();
-			fila.put("ID", String.valueOf(resultSet.getInt("ID")));
-			fila.put("NOMBRE", resultSet.getString("NOMBRE"));
-			fila.put("DESCRIPCION", resultSet.getString("DESCRIPCION"));
-			fila.put("CANTIDAD", String.valueOf(resultSet.getInt("CANTIDAD")));
+				while (resultSet.next()) {
+					Map<String, String> fila = new HashMap<>();
+					fila.put("ID", String.valueOf(resultSet.getInt("ID")));
+					fila.put("NOMBRE", resultSet.getString("NOMBRE"));
+					fila.put("DESCRIPCION", resultSet.getString("DESCRIPCION"));
+					fila.put("CANTIDAD", String.valueOf(resultSet.getInt("CANTIDAD")));
 
-			resultado.add(fila);
+					resultado.add(fila);
+				}
+				return resultado;
+			}
 		}
-
-		con.close();
-
-		return resultado;
 	}
 
 	public void guardar(Map<String, String> producto) throws SQLException {
@@ -80,30 +92,32 @@ public class ProductoController {
 		Integer maximaCantidad = 50;
 
 		ConnectionFactory factory = new ConnectionFactory();
-		Connection con = factory.recuperaConexion();
-		con.setAutoCommit(false);// Nosotros tenemos el control de la transacción
+		final Connection con = factory.recuperaConexion();
 
-		PreparedStatement statement = con.prepareStatement(
-				"INSERT INTO PRODUCTO " + "(nombre, descripcion, cantidad)" + "VALUES (?, ?, ?)",
-				Statement.RETURN_GENERATED_KEYS);
-		try {
-			do {
-				int cantidadParaGuardar = Math.min(cantidad, maximaCantidad);
+		try (con) {
 
-				ejecutaRegistro(nombre, descripcion, cantidadParaGuardar, statement);
-				cantidad -= maximaCantidad;
-			} while (cantidad > 0);
+			con.setAutoCommit(false);// Nosotros tenemos el control de la transacción
 
-			con.commit();
-			System.out.println("COMMIT");
-		} catch (Exception e) {
-			con.rollback(); //Cancelamos la ejecución de la transacción si existe un proble durante el proceso
-			System.out.println("ROLLBACK");
+			final PreparedStatement statement = con.prepareStatement(
+					"INSERT INTO PRODUCTO " + "(nombre, descripcion, cantidad)" + "VALUES (?, ?, ?)",
+					Statement.RETURN_GENERATED_KEYS);
+
+			try (statement) {
+				do {
+					int cantidadParaGuardar = Math.min(cantidad, maximaCantidad);
+
+					ejecutaRegistro(nombre, descripcion, cantidadParaGuardar, statement);
+					cantidad -= maximaCantidad;
+				} while (cantidad > 0);
+
+				con.commit();
+				System.out.println("COMMIT");
+			} catch (Exception e) {
+				con.rollback(); // Cancelamos la ejecución de la transacción si existe un proble durante el
+								// proceso
+				System.out.println("ROLLBACK");
+			}
 		}
-		
-		statement.close();
-		
-		con.close();
 	}
 
 	private void ejecutaRegistro(String nombre, String descripcion, Integer cantidad, PreparedStatement statement)
@@ -118,11 +132,21 @@ public class ProductoController {
 
 		statement.execute();
 
-		ResultSet resultSet = statement.getGeneratedKeys();
-
-		while (resultSet.next()) {
-			System.out.println(String.format("Fue insertado el producto de ID %d", resultSet.getInt(1)));
+		// Auto-closable java-v9
+		final ResultSet resultSet = statement.getGeneratedKeys();
+		try (resultSet) {
+			while (resultSet.next()) {
+				System.out.println(String.format("Fue insertado el producto de ID %d", resultSet.getInt(1)));
+			}
 		}
+
+		//// Auto-closable java-v7
+		// try (ResultSet resultSet = statement.getGeneratedKeys();) {
+		// while (resultSet.next()) {
+		// System.out.println(String.format("Fue insertado el producto de ID %d",
+		//// resultSet.getInt(1)));
+		// }
+		// }
 	}
 
 }
