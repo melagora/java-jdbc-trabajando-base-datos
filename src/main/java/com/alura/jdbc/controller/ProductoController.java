@@ -1,18 +1,32 @@
 package com.alura.jdbc.controller;
 
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.CallableStatement;
+import java.sql.Clob;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.NClob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Savepoint;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.Executor;
 
+import com.alura.jdbc.dao.ProductoDAO;
 import com.alura.jdbc.factory.ConnectionFactory;
 import com.alura.jdbc.modelo.Producto;
 
 import java.sql.Statement;
+import java.sql.Struct;
 
 public class ProductoController {
 
@@ -87,69 +101,8 @@ public class ProductoController {
 	}
 
 	public void guardar(Producto producto) throws SQLException {
-		String nombre = producto.getNombre();
-		String descripcion = producto.getDescripcion();
-		Integer cantidad = producto.getCantidad();
-		//Integer maximaCantidad = 50;
-
-		ConnectionFactory factory = new ConnectionFactory();
-		final Connection con = factory.recuperaConexion();
-
-		try (con) {
-
-			con.setAutoCommit(false);// Nosotros tenemos el control de la transacción
-
-			final PreparedStatement statement = con.prepareStatement(
-					"INSERT INTO PRODUCTO " + "(nombre, descripcion, cantidad)" + "VALUES (?, ?, ?)",
-					Statement.RETURN_GENERATED_KEYS);
-
-			try (statement) {
-				//do {
-					//int cantidadParaGuardar = Math.min(cantidad, maximaCantidad);
-
-					ejecutaRegistro(producto, statement);
-					//cantidad -= maximaCantidad;
-				//} while (cantidad > 0);
-					con.commit();
-				//System.out.println("COMMIT");
-			} catch (Exception e) {
-				e.printStackTrace();
-				System.out.println("ROLLBACK");
-				con.rollback(); // Cancelamos la ejecución de la transacción si existe un proble durante el
-								// proceso
-				
-			}
-		}
-	}
-
-	private void ejecutaRegistro(Producto producto, PreparedStatement statement)
-			throws SQLException {
-		// if(cantidad<50) {
-		// throw new RuntimeException("Ocurrio un error");
-		// }
-
-		statement.setString(1, producto.getNombre());
-		statement.setString(2, producto.getDescripcion());
-		statement.setInt(3, producto.getCantidad());
-
-		statement.execute();
-
-		// Auto-closable java-v9
-		final ResultSet resultSet = statement.getGeneratedKeys();
-		try (resultSet) {
-			while (resultSet.next()) {
-				producto.setId(resultSet.getInt(1));
-				System.out.println(String.format("Fue insertado el producto %s", producto));
-			}
-		}
-
-		//// Auto-closable java-v7
-		// try (ResultSet resultSet = statement.getGeneratedKeys();) {
-		// while (resultSet.next()) {
-		// System.out.println(String.format("Fue insertado el producto de ID %d",
-		//// resultSet.getInt(1)));
-		// }
-		// }
+		ProductoDAO productoDAO = new ProductoDAO(new ConnectionFactory().recuperaConexion());
+		productoDAO.guardar(producto);
 	}
 
 }
