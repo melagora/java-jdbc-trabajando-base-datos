@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.alura.jdbc.factory.ConnectionFactory;
+import com.alura.jdbc.modelo.Producto;
 
 import java.sql.Statement;
 
@@ -85,11 +86,11 @@ public class ProductoController {
 		}
 	}
 
-	public void guardar(Map<String, String> producto) throws SQLException {
-		String nombre = producto.get("NOMBRE");
-		String descripcion = producto.get("DESCRIPCION");
-		Integer cantidad = Integer.valueOf(producto.get("CANTIDAD"));
-		Integer maximaCantidad = 50;
+	public void guardar(Producto producto) throws SQLException {
+		String nombre = producto.getNombre();
+		String descripcion = producto.getDescripcion();
+		Integer cantidad = producto.getCantidad();
+		//Integer maximaCantidad = 50;
 
 		ConnectionFactory factory = new ConnectionFactory();
 		final Connection con = factory.recuperaConexion();
@@ -103,32 +104,33 @@ public class ProductoController {
 					Statement.RETURN_GENERATED_KEYS);
 
 			try (statement) {
-				do {
-					int cantidadParaGuardar = Math.min(cantidad, maximaCantidad);
+				//do {
+					//int cantidadParaGuardar = Math.min(cantidad, maximaCantidad);
 
-					ejecutaRegistro(nombre, descripcion, cantidadParaGuardar, statement);
-					cantidad -= maximaCantidad;
-				} while (cantidad > 0);
-
-				con.commit();
-				System.out.println("COMMIT");
+					ejecutaRegistro(producto, statement);
+					//cantidad -= maximaCantidad;
+				//} while (cantidad > 0);
+					con.commit();
+				//System.out.println("COMMIT");
 			} catch (Exception e) {
+				e.printStackTrace();
+				System.out.println("ROLLBACK");
 				con.rollback(); // Cancelamos la ejecución de la transacción si existe un proble durante el
 								// proceso
-				System.out.println("ROLLBACK");
+				
 			}
 		}
 	}
 
-	private void ejecutaRegistro(String nombre, String descripcion, Integer cantidad, PreparedStatement statement)
+	private void ejecutaRegistro(Producto producto, PreparedStatement statement)
 			throws SQLException {
 		// if(cantidad<50) {
 		// throw new RuntimeException("Ocurrio un error");
 		// }
 
-		statement.setString(1, nombre);
-		statement.setString(2, descripcion);
-		statement.setInt(3, cantidad);
+		statement.setString(1, producto.getNombre());
+		statement.setString(2, producto.getDescripcion());
+		statement.setInt(3, producto.getCantidad());
 
 		statement.execute();
 
@@ -136,7 +138,8 @@ public class ProductoController {
 		final ResultSet resultSet = statement.getGeneratedKeys();
 		try (resultSet) {
 			while (resultSet.next()) {
-				System.out.println(String.format("Fue insertado el producto de ID %d", resultSet.getInt(1)));
+				producto.setId(resultSet.getInt(1));
+				System.out.println(String.format("Fue insertado el producto %s", producto));
 			}
 		}
 
