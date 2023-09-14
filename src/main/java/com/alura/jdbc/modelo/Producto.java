@@ -15,28 +15,27 @@ public class Producto {
 		this.cantidad = cantidad;
 	}
 
-	public String getNombre() {
-		return nombre;
+	public Producto(int id, String nombre, String descripcion, int cantidad) {
+		this.id = id;
+		this.nombre = nombre;
+		this.descripcion = descripcion;
+		this.cantidad = cantidad;
 	}
 
-	public void setNombre(String nombre) {
-		this.nombre = nombre;
+	public String getNombre() {
+		return nombre;
 	}
 
 	public String getDescripcion() {
 		return descripcion;
 	}
 
-	public void setDescripcion(String descripcion) {
-		this.descripcion = descripcion;
-	}
-
 	public Integer getCantidad() {
 		return cantidad;
 	}
-
-	public void setCantidad(Integer cantidad) {
-		this.cantidad = cantidad;
+	
+	public Integer getId() {
+		return this.id;
 	}
 	
 	public void setId(int id) {
