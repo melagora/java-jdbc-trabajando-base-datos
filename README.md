@@ -3,3 +3,5 @@ Este repositorio alberga mis prácticas para aprender a comunicarme con bases de
 
 # TRABAJO FINALIZADO!!! :)
 ![Entorno de trabajo con play del frame](https://github.com/melagora/java-jdbc-trabajando-base-datos/blob/main/java-jdbc-trabajando-base-datos.png?raw=true)
+
+Por algo se empieza...
